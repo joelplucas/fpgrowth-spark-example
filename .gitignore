@@ -1,0 +1,11 @@
+.DS_Store
+*.DS_STORE
+.classpath
+.project
+.settings/
+.metadata/
+nbproject/
+target
+nbactions.xml
+.idea/
+*.iml
