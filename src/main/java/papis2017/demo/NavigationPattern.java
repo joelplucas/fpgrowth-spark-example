@@ -1,7 +1,9 @@
 package papis2017.demo;
 
+import com.google.common.base.CharMatcher;
 import org.mongodb.morphia.annotations.Entity;
-
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -11,17 +13,16 @@ import java.util.List;
 public class NavigationPattern implements Comparable<NavigationPattern> {
 
     private List<String> freqItems;
-    private double relevance;
+    private float relevance;
 
     public NavigationPattern() {
     }
 
-    public NavigationPattern(List<String> freqItems, long frequency, long totalUsers) {
-        this.freqItems = freqItems;
+    public NavigationPattern(List<String> freqItemsPattern, long frequency, long totalUsers) throws UnsupportedEncodingException {
+        this.freqItems = removeUnicode(freqItemsPattern);
         this.relevance = (int)frequency;
-        this.relevance = (100*frequency)/totalUsers;
+        this.relevance = (100*(float)frequency)/(float)totalUsers;
     }
-
 
     public List<String> getFreqItems() {
         return freqItems;
@@ -35,10 +36,18 @@ public class NavigationPattern implements Comparable<NavigationPattern> {
         return relevance;
     }
 
-    public void setRelevance(double relevance) {
+    public void setRelevance(float relevance) {
         this.relevance = relevance;
     }
 
+    // remove extra chars added wrongly by MLlib
+    private List<String> removeUnicode(List<String> freqItemsPattern) {
+        List<String> freqItems = new ArrayList<>();
+        for(String item : freqItemsPattern) {
+            freqItems.add(CharMatcher.INVISIBLE.removeFrom(item));
+        }
+        return freqItems;
+    }
 
     @Override
     public int compareTo(NavigationPattern o) {
@@ -50,5 +59,4 @@ public class NavigationPattern implements Comparable<NavigationPattern> {
             return 0;
         }
     }
-
 }

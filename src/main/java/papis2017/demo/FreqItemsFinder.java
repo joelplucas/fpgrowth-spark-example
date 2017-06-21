@@ -1,6 +1,8 @@
 package papis2017.demo;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.mongodb.MongoClient;
@@ -20,11 +22,11 @@ import papis2017.demo.sparkProcessors.LineProcessor;
  */
 public class FreqItemsFinder {
 
-    private static double MIN_SUPPORT = 0.3;
+    private static double MIN_SUPPORT = 0.05;
     private static int MAX_RULES_COUNT = 100;
     private static int MIN_FREQ_PROPERTIES = 2;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws UnsupportedEncodingException {
         if (args.length != 2) {
             System.err.println("Please define an input file path and a valid MongoDB host!");
             System.exit(1);
@@ -35,7 +37,7 @@ public class FreqItemsFinder {
         freqItemsFinder.savePatterns(args[1], navigationPatterns);
     }
 
-    public List<NavigationPattern> findPatternsWithSpark(String filePath) {
+    public List<NavigationPattern> findPatternsWithSpark(String filePath)  throws UnsupportedEncodingException {
         JavaSparkContext sc = new JavaSparkContext();
 
         // read data from file
@@ -56,18 +58,25 @@ public class FreqItemsFinder {
         return navigationPatterns;
     }
 
-    private List<NavigationPattern> rddmodelToStrings(FPGrowthModel<String> model, long profilesCount) {
+    private List<NavigationPattern> rddmodelToStrings(FPGrowthModel<String> model, long profilesCount) throws UnsupportedEncodingException {
         RDD<FreqItemset<String>> fpgFreqItems = model.freqItemsets();
         List<NavigationPattern> navigationPatterns = new ArrayList<>();
 
         if(fpgFreqItems != null) {
-            List<FreqItemset<String>> freqItems = fpgFreqItems.toJavaRDD().take(MAX_RULES_COUNT);
-            for (FreqItemset<String> items : freqItems) {
+            List<FPGrowth.FreqItemset<String>> freqItems = fpgFreqItems.toJavaRDD().take(MAX_RULES_COUNT);
+            for(FPGrowth.FreqItemset<String> items : freqItems) {
+                if(!isUsefulRules(items)) {
+                    continue;
+                }
                 NavigationPattern navigationPattern = new NavigationPattern(items.javaItems(), items.freq(), profilesCount);
                 navigationPatterns.add(navigationPattern);
             }
         }
         return navigationPatterns;
+    }
+
+    private boolean isUsefulRules(FreqItemset<String> items) {
+        return (items.javaItems().size()>=MIN_FREQ_PROPERTIES);
     }
 
     public void savePatterns(String mongoHost, List<NavigationPattern> navigationPatterns) {
