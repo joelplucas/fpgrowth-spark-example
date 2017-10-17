@@ -26,6 +26,7 @@ public class LineProcessorTest extends SharedJavaSparkContext {
     public void parseRegularLineTest() {
         inputEntries.add(";ADULT;GYM;LOWINCOME;");
         JavaRDD<String> rddEntries = jsc().parallelize(inputEntries);
+
         // simulating a Spark processor
         JavaRDD<List<String>> userCorrelations = rddEntries.map(new LineProcessor());
 
